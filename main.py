@@ -55,9 +55,11 @@ S1_A4 = Request(
 
 
 if __name__ == "__main__":
-    gmaps = googlemaps.Client(key="AIzaSyAxZZtI0kQUBiX5ncwCFO9SDkt04EW7IU8")
+    with open('api_key.txt','r',encoding='utf-8') as api:
+        api_key = api.readline()
+    gmaps = googlemaps.Client(key=api_key)
     arr = [
-        # FASTEST,
+        #FASTEST,
         SC_A4,
         DK94_A4,
         DK94_DTS,
@@ -65,8 +67,8 @@ if __name__ == "__main__":
         S1_A4,
     ]
     to_work = [a.get_route(gmaps) for a in arr]
-    best_to_work = min(to_work, key=attrgetter("duration"))
+    best_to_work =min(to_work,key=attrgetter('duration'))
     to_home = [a.reversed().get_route(gmaps) for a in arr]
-    best_to_home = min(to_home, key=attrgetter("duration"))
+    best_to_home =min(to_home,key=attrgetter('duration'))
     print(best_to_work)
     print(best_to_home)
