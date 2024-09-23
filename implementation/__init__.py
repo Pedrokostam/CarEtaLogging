@@ -1,0 +1,1 @@
+coords = tuple[float, float]
