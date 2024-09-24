@@ -1,6 +1,16 @@
+from datetime import datetime
 from operator import attrgetter
+import os
+from time import sleep
 import googlemaps
+
+from implementation.archiver import add_data, routes_to_dict, get_worksheet
 from implementation.request import Request
+import gspread
+from google.oauth2.credentials import Credentials
+from google.auth.transport import requests
+from google_auth_oauthlib.flow import InstalledAppFlow
+from rich import print
 
 home = (50.30442699863767, 19.183934458803197)
 work = (50.27773270036598, 18.687399321484765)
@@ -55,20 +65,22 @@ S1_A4 = Request(
 
 
 if __name__ == "__main__":
-    with open('api_key.txt','r',encoding='utf-8') as api:
+    with open("api_key.txt", "r", encoding="utf-8") as api:
         api_key = api.readline()
+
     gmaps = googlemaps.Client(key=api_key)
     arr = [
-        #FASTEST,
+        # FASTEST,
         SC_A4,
         DK94_A4,
         DK94_DTS,
         SC_DTS,
         S1_A4,
     ]
-    to_work = [a.get_route(gmaps) for a in arr]
-    best_to_work =min(to_work,key=attrgetter('duration'))
-    to_home = [a.reversed().get_route(gmaps) for a in arr]
-    best_to_home =min(to_home,key=attrgetter('duration'))
-    print(best_to_work)
-    print(best_to_home)
+    while True:
+        to_work = [a.get_route(gmaps) for a in arr]
+        # to_home = [a.reversed().get_route(gmaps) for a in arr]
+        worksheet = get_worksheet()
+        dicts = routes_to_dict(to_work)
+        add_data(worksheet, dicts)
+        sleep(10 * 60)
