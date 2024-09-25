@@ -77,10 +77,8 @@ if __name__ == "__main__":
         SC_DTS,
         S1_A4,
     ]
-    while True:
-        to_work = [a.get_route(gmaps) for a in arr]
-        # to_home = [a.reversed().get_route(gmaps) for a in arr]
-        worksheet = get_worksheet()
-        dicts = routes_to_dict(to_work)
-        add_data(worksheet, dicts)
-        sleep(10 * 60)
+    to_work = [a.get_route(gmaps) for a in arr]
+    # to_home = [a.reversed().get_route(gmaps) for a in arr]
+    worksheet = get_worksheet()
+    dicts = routes_to_dict(to_work)
+    add_data(worksheet, dicts)
