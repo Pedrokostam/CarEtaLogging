@@ -1,11 +1,16 @@
 from datetime import datetime
 import os
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
+from zoneinfo import ZoneInfo
+import gsheet_pandas
 import gspread
 from gspread.worksheet import Worksheet
 from google.oauth2.credentials import Credentials
 from google.auth.transport import requests
 from google_auth_oauthlib.flow import InstalledAppFlow
+import pandas as pd
+from gsheet_pandas import DriveConnection
 
 from implementation.route import Route
 
@@ -44,7 +49,7 @@ def get_worksheet():
 
     creds = authenticate()
     client = gspread.auth.authorize(creds)
-    params = {"title": "Careta Logs", "folder_id": "1C3v18sCG4WHRTWfpxmoY4PxfQ3EOOHpQ"}
+    params = {"title": "Test", "folder_id": "1C3v18sCG4WHRTWfpxmoY4PxfQ3EOOHpQ"}
     try:
         sheet = client.open(**params)
     except (gspread.exceptions.SpreadsheetNotFound, gspread.exceptions.APIError):
@@ -73,11 +78,49 @@ def add_data(sheet: Worksheet, data: dict[Any, str | int | float]):
 
 
 def routes_to_dict(routes: list[Route]):
-    time = datetime.now()
-    d: dict[str, Any] = {
-        "Date": time.strftime("%Y-%m-%d"),
-        "Time": time.strftime("%H:%M:%S"),
-    }
+    d: dict[str, Any] = {}
     for r in routes:
         d[r.name] = str(r.duration)
     return d
+
+
+GOOGLE_START_DATE = datetime(1899, 12, 30)
+
+
+def add_row_with_current_time(frame: pd.DataFrame, values: dict[str, Any], datetime_added: Optional[datetime] = None):
+    current_time = datetime_added or datetime.now()
+    google_start = datetime(1899, 12, 30)
+    diff = current_time - google_start
+    days_since_float = diff.total_seconds() / (24 * 60 * 60)
+    date_days = int(days_since_float)
+    time_days = days_since_float - date_days
+    time_dict = {"Time": time_days, "Date": date_days, "Datetime": days_since_float}
+    values = time_dict | values
+    non_scalar = {k: [v] for k, v in values.items()}
+    frame_to_add = pd.DataFrame.from_dict(non_scalar)
+    return pd.concat([frame, frame_to_add])
+
+
+class Archiver:
+    def __init__(self, credentials: str | Path, token: str | Path, spreadsheet_id: str) -> None:
+        self.spreadsheet_id = spreadsheet_id
+        credentials = Path(credentials).resolve()
+        token = Path(token).resolve()
+        self._drive = DriveConnection(credentials_dir=credentials, token_dir=token)
+
+    def get_frame(self, sheet_name: str):
+        try:
+            return self._drive.download(self.spreadsheet_id, sheet_name)
+        except Exception as e:
+            if not e.args or e.args[0] != "Empty data":
+                raise e
+            return pd.DataFrame()
+
+    def upload_frame(self, frame: pd.DataFrame, sheet_name: str):
+        self._drive.upload(frame, self.spreadsheet_id, sheet_name)
+
+    def ensure_sheets(self, *sheet_names: str):
+        present_sheets = self._drive.get_sheets_names(self.spreadsheet_id)
+        for name in sheet_names:
+            if name not in present_sheets:
+                self._drive.create_sheet(self.spreadsheet_id, name)
