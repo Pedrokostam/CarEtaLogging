@@ -94,7 +94,11 @@ def add_row_with_current_time(frame: pd.DataFrame, values: dict[str, Any], datet
     days_since_float = diff.total_seconds() / (24 * 60 * 60)
     date_days = int(days_since_float)
     time_days = days_since_float - date_days
-    time_dict = {"Time": time_days, "Date": date_days, "Datetime": days_since_float}
+    time_dict = {
+        "Datetime": days_since_float,
+        "Date": date_days,
+        "Time": time_days,
+    }
     values = time_dict | values
     non_scalar = {k: [v] for k, v in values.items()}
     frame_to_add = pd.DataFrame.from_dict(non_scalar)
