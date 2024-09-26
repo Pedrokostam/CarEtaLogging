@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
 import json
+from datetime import timedelta
 from typing import Optional
 
 from implementation.leg import Leg

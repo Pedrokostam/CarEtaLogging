@@ -1,16 +1,16 @@
-from datetime import datetime
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
-from zoneinfo import ZoneInfo
-import gsheet_pandas
+
 import gspread
-from gspread.worksheet import Worksheet
-from google.oauth2.credentials import Credentials
-from google.auth.transport import requests
-from google_auth_oauthlib.flow import InstalledAppFlow
 import pandas as pd
+from alive_progress import alive_bar
+from google.auth.transport import requests
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from gsheet_pandas import DriveConnection
+from gspread.worksheet import Worksheet
 
 from implementation.route import Route
 
@@ -116,7 +116,7 @@ class Archiver:
     def get_frame(self, sheet_name: str):
         try:
             return self._drive.download(self.spreadsheet_id, sheet_name)
-        except Exception as e:
+        except Exception as e:  # pylint:disable=broad-exception-caught
             if not e.args or e.args[0] != "Empty data":
                 raise e
             return pd.DataFrame()
@@ -129,3 +129,16 @@ class Archiver:
         for name in sheet_names:
             if name not in present_sheets:
                 self._drive.create_sheet(self.spreadsheet_id, name)
+
+    @classmethod
+    def initialize(
+        cls,
+        spreadsheet_id: str,
+        sheet_names: list[str],
+        credentials: str | Path = "credentials.json",
+        token: str | Path = "token.json",
+    ):
+        with alive_bar(title="Connecting to Google Sheets"):
+            archie = Archiver(credentials, token, spreadsheet_id)
+            archie.ensure_sheets(*sheet_names)
+            return archie
