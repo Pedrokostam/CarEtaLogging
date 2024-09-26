@@ -48,10 +48,10 @@ S1_WAYPOINTS: list[str | coords] = [
     (50.284299099038556, 19.216300705465596),  # Tuż za wjazdem
     (50.21052546717317, 19.154564592767706),  # Po zjeździe na A4
 ]
-FASTEST =  Request(
+FASTEST = Request(
     **endpoints,
     waypoints=None,
-    name='Fastest',
+    name="Fastest",
 )
 
 S86_A4 = Request(
@@ -77,7 +77,7 @@ SC_DTS = Request(
 
 S1_A4 = Request(
     **endpoints,
-    waypoints=[(50.27917562078247, 19.211480734035987)],#S1_WAYPOINTS + A4_WAYPOINTS,
+    waypoints=[(50.27917562078247, 19.211480734035987)],  # S1_WAYPOINTS + A4_WAYPOINTS,
     name=["S1", "A4"],
 )
 HOME_WORK = "Dom→Praca"
@@ -91,7 +91,8 @@ def update_routes(
     requests: list[Request],
     *,
     reverse: bool = False,
-    forced_time: Optional[datetime] = None,
+    forced_log_time: Optional[datetime] = None,
+    forced_departure_time: Optional[datetime] = None,
 ):
     if reverse:
         requests = [a.reversed() for a in requests]
@@ -99,11 +100,11 @@ def update_routes(
     routes = []
     for req in p_bar:
         p_bar.text = req.name  # type: ignore
-        routes.append(req.get_route(maps_client))
+        routes.append(req.get_route(maps_client, forced_departure_time))
     with alive_bar(title=f"Updating sheet {sheet_name}"):
         dicto = routes_to_dict(routes)
         frame = archiver.get_frame(sheet_name)
-        new_frame = add_row_with_current_time(frame, dicto, datetime_added=forced_time)
+        new_frame = add_row_with_current_time(frame, dicto, datetime_added=forced_log_time)
         archiver.upload_frame(new_frame, sheet_name)
 
 
@@ -124,18 +125,21 @@ if __name__ == "__main__":
         SC_DTS,
         S1_A4,
     ]
+    forced_departure_datetime = datetime.now()
     update_routes(
         archie,
         gmaps,
         HOME_WORK,
         all_requests,
-        forced_time=forced_logged_datetime,
+        forced_log_time=forced_logged_datetime,
+        forced_departure_time=forced_departure_datetime,
     )
     update_routes(
         archie,
         gmaps,
         WORK_HOME,
         all_requests,
-        forced_time=forced_logged_datetime,
+        forced_log_time=forced_logged_datetime,
+        forced_departure_time=forced_departure_datetime,
         reverse=True,
     )

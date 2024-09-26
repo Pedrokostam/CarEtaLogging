@@ -61,10 +61,8 @@ class Request:
             "waypoints": inter_via,
         }
 
-    def get_route(self, client: googlemaps.Client):
-        all_points = [self.start] + (self.waypoints or []) + [self.end]
-        wp = googlemaps.roads.snap_to_roads(client, all_points, interpolate=True)
-        ls = [tuple(p["location"].values()) for p in wp]
+    def get_route(self, client: googlemaps.Client, depart_time: Optional[datetime] = None):
         params = self.get_interpolated_params(client)
-        node = directions(client=client, departure_time=datetime.now(), **params)
+        depart_time = depart_time or datetime.now()
+        node = directions(client=client, departure_time=depart_time, **params)
         return Route(node[0], custom_name=self.name)

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from logging import warning
 
 from implementation.location import Location
 
@@ -10,6 +11,7 @@ class Leg:
         if "duration_in_traffic" in leg:
             self.duration = timedelta(seconds=leg["duration_in_traffic"]["value"])
         else:
+            warning('Duration in traffic was not present for!')
             self.duration = timedelta(seconds=leg["duration"]["value"])
         self.start = Location.from_node(leg, "start")
         self.end = Location.from_node(leg, "end")
