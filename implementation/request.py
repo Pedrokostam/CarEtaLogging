@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from operator import attrgetter
 from typing import Optional
 
 import googlemaps
@@ -64,5 +65,7 @@ class Request:
     def get_route(self, client: googlemaps.Client, depart_time: Optional[datetime] = None):
         params = self.get_interpolated_params(client)
         depart_time = depart_time or datetime.now()
-        node = directions(client=client, departure_time=depart_time, **params)
-        return Route(node[0], custom_name=self.name)
+        nodes = directions(client=client, departure_time=depart_time, alternatives=True, **params)
+        routes = [Route(n, custom_name=self.name) for n in nodes]
+        fastest_route = min(routes, key=attrgetter("duration"))
+        return fastest_route
