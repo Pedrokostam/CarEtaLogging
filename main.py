@@ -48,7 +48,11 @@ S1_WAYPOINTS: list[str | coords] = [
     (50.284299099038556, 19.216300705465596),  # Tuż za wjazdem
     (50.21052546717317, 19.154564592767706),  # Po zjeździe na A4
 ]
-
+FASTEST =  Request(
+    **endpoints,
+    waypoints=None,
+    name='Fastest',
+)
 
 S86_A4 = Request(
     **endpoints,
@@ -73,7 +77,7 @@ SC_DTS = Request(
 
 S1_A4 = Request(
     **endpoints,
-    waypoints=S1_WAYPOINTS + A4_WAYPOINTS,
+    waypoints=[(50.27917562078247, 19.211480734035987)],#S1_WAYPOINTS + A4_WAYPOINTS,
     name=["S1", "A4"],
 )
 HOME_WORK = "Dom→Praca"
@@ -113,6 +117,7 @@ if __name__ == "__main__":
     with alive_bar(title="Connecting to Google Maps"):
         gmaps = googlemaps.Client(key=api_key)
     all_requests = [
+        FASTEST,
         S86_A4,
         S86_DTS,
         SC_A4,

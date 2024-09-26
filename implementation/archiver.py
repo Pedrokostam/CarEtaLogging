@@ -101,8 +101,9 @@ def add_row_with_current_time(frame: pd.DataFrame, values: dict[str, Any], datet
     }
     values = time_dict | values
     non_scalar = {k: [v] for k, v in values.items()}
+    base_frame = frame.dropna()
     frame_to_add = pd.DataFrame.from_dict(non_scalar)
-    return pd.concat([frame, frame_to_add])
+    return pd.concat([frame, frame_to_add]) if not base_frame.empty else frame_to_add
 
 
 class Archiver:

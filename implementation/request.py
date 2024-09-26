@@ -1,8 +1,10 @@
 from datetime import datetime
+import json
 from typing import Optional
 
 import googlemaps
 from googlemaps.directions import directions
+import googlemaps.roads
 from implementation import coords
 from implementation.route import Route
 
@@ -41,20 +43,28 @@ class Request:
         reversed_name = self.name
         if reversed_name and Request.THROUGH_CHAR in reversed_name:
             reversed_name = Request.THROUGH_CHAR.join(reversed_name.split(Request.THROUGH_CHAR))
-        return Request(
-            self.end,
-            self.start,
-            reversed_waypoints,
-            name=reversed_name
-        )
+        return Request(self.end, self.start, reversed_waypoints, name=reversed_name)
+
+    def get_interpolated_params(self, client: googlemaps.Client):
+        all_waypoints = self.waypoints or []
+        all_waypoints.insert(0, self.start)
+        all_waypoints.append(self.end)
+        interpolated_result = googlemaps.roads.snap_to_roads(client, all_waypoints, interpolate=True)
+        interpolated_coords = [(p["location"]["latitude"], p["location"]["longitude"]) for p in interpolated_result]
+        inter_start = interpolated_coords[0]
+        inter_end = interpolated_coords[-1]
+        inter_waypoints = interpolated_coords[1:-1]
+        inter_via = [to_via(wp) for wp in inter_waypoints]
+        return {
+            "origin": inter_start,
+            "destination": inter_end,
+            "waypoints": inter_via,
+        }
 
     def get_route(self, client: googlemaps.Client):
-        vias = [to_via(x) for x in self.waypoints] if self.waypoints else None
-        node = directions(
-            client=client,
-            origin=self.start,
-            destination=self.end,
-            waypoints=vias,
-            departure_time=datetime.now(),
-        )
+        all_points = [self.start] + (self.waypoints or []) + [self.end]
+        wp = googlemaps.roads.snap_to_roads(client, all_points, interpolate=True)
+        ls = [tuple(p["location"].values()) for p in wp]
+        params = self.get_interpolated_params(client)
+        node = directions(client=client, departure_time=datetime.now(), **params)
         return Route(node[0], custom_name=self.name)
